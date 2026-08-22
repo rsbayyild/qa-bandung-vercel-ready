@@ -1,35 +1,43 @@
-import { getAiRuntimeStatus, testAiProvider } from "../lib/ai";
-
 function safeError(error: unknown) {
-  if (error instanceof Error) return { name: error.name, message: error.message };
+  if (error instanceof Error) return { name: error.name, message: error.message, stack: error.stack };
   return { message: String(error) };
 }
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const runtime = getAiRuntimeStatus();
-  const provider = url.searchParams.get("provider") || "openai";
-  const model = url.searchParams.get("model") || undefined;
-  const base = {
-    ok: true,
-    runtime: `node ${process.version}`,
-    provider,
-    model,
-    ...runtime,
-  };
-
-  if (url.searchParams.get("test") !== "provider") {
-    return Response.json(base);
-  }
-
+export default async function handler(request: any, response: any) {
   try {
-    const result = await testAiProvider({ provider, model });
-    return Response.json({ ...base, reachable: true, selected: result });
+    const provider = String(request.query?.provider || "openai");
+    const model = request.query?.model ? String(request.query.model) : undefined;
+    const test = String(request.query?.test || "");
+
+    const ai = await import("../lib/ai");
+    const runtime = ai.getAiRuntimeStatus();
+    const base = {
+      ok: true,
+      runtime: `node ${process.version}`,
+      handler: "node-req-res-lazy-import",
+      provider,
+      model,
+      ...runtime,
+    };
+
+    if (test !== "provider") {
+      return response.status(200).json(base);
+    }
+
+    try {
+      const result = await ai.testAiProvider({ provider, model });
+      return response.status(200).json({ ...base, reachable: true, selected: result });
+    } catch (error) {
+      console.error("AI provider health test failed:", error);
+      return response.status(500).json({ ...base, ok: false, reachable: false, error: safeError(error) });
+    }
   } catch (error) {
-    console.error("AI provider health test failed:", error);
-    return Response.json(
-      { ...base, ok: false, reachable: false, error: safeError(error) },
-      { status: 500 }
-    );
+    console.error("Health function bootstrap failed:", error);
+    return response.status(500).json({
+      ok: false,
+      stage: "bootstrap",
+      handler: "node-req-res-lazy-import",
+      error: safeError(error),
+    });
   }
 }
