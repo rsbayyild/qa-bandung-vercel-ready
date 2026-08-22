@@ -1,0 +1,59 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "QA Bandung Vercel Ready API",
+    "description": "API for QA automation and testing features",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://YOUR_DOMAIN"
+    }
+  ],
+  "paths": {
+    "/api/tests": {
+      "get": {
+        "summary": "Get test results",
+        "operationId": "getTests",
+        "responses": {
+          "200": {
+            "description": "Test results retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/results": {
+      "get": {
+        "summary": "Get QA results",
+        "operationId": "getResults",
+        "responses": {
+          "200": {
+            "description": "QA results retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
