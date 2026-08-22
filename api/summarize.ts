@@ -1,4 +1,4 @@
-import { summarizeItems } from "../lib/gemini";
+import { summarizeItems } from "../lib/openai";
 
 export default {
   async fetch(request: Request) {
@@ -21,7 +21,7 @@ export default {
       console.error("Summarize API failed:", error);
       return Response.json(
         {
-          error: error?.message || "Gagal membuat ringkasan multiberkas menggunakan Gemini.",
+          error: error?.message || "Gagal membuat ringkasan multiberkas menggunakan OpenAI.",
           stage: "summarize",
         },
         { status: 500 }
