@@ -1,0 +1,26 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "QA Bandung Vercel Ready",
+  "name_for_model": "qa_bandung_vercel_ready",
+  "description_for_human": "QA automation and testing plugin for Bandung Vercel Ready application",
+  "description_for_model": "This plugin provides access to QA testing, automation, and quality assurance features for the Bandung Vercel Ready application",
+  "auth": {
+    "type": "oauth2",
+    "client_id": "YOUR_CLIENT_ID",
+    "client_secret": "YOUR_CLIENT_SECRET",
+    "authorization_url": "https://github.com/login/oauth/authorize",
+    "authorization_content_type": "application/x-www-form-urlencoded",
+    "verification_tokens": {
+      "openai": "YOUR_VERIFICATION_TOKEN"
+    },
+    "scope": "repo"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://YOUR_DOMAIN/openapi.json",
+    "is_user_authenticated": true
+  },
+  "logo_url": "https://YOUR_DOMAIN/logo.png",
+  "contact_email": "support@YOUR_DOMAIN.com",
+  "legal_info_url": "https://YOUR_DOMAIN/legal"
+}
