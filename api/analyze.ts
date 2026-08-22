@@ -1,24 +1,31 @@
-import { analyzeImage } from "../lib/ai";
+function bodyOf(request: any) {
+  if (request.body && typeof request.body === "object") return request.body;
+  if (typeof request.body === "string") {
+    try { return JSON.parse(request.body); } catch { return {}; }
+  }
+  return {};
+}
 
-export async function POST(request: Request) {
+export default async function handler(request: any, response: any) {
+  if (request.method !== "POST") return response.status(405).json({ error: "Method not allowed" });
+
   try {
-    const body = await request.json();
-    if (!body?.imageB64) {
-      return Response.json({ error: "Crop gambar base64 tidak ditemukan." }, { status: 400 });
-    }
+    const body = bodyOf(request);
+    if (!body?.imageB64) return response.status(400).json({ error: "Crop gambar base64 tidak ditemukan." });
 
-    const result = await analyzeImage(
+    const ai = await import("../lib/ai");
+    const result = await ai.analyzeImage(
       body.imageB64,
       body.type === "order" ? "order" : "denah",
       { provider: body.provider, model: body.model }
     );
-
-    return Response.json(result);
+    return response.status(200).json(result);
   } catch (error: any) {
     console.error("Analyze API failed:", error);
-    return Response.json(
-      { error: error?.message || "Gagal menganalisis gambar.", stage: "analyze" },
-      { status: 500 }
-    );
+    return response.status(500).json({
+      error: error?.message || "Gagal menganalisis gambar.",
+      stage: "analyze",
+      handler: "node-req-res-lazy-import",
+    });
   }
 }
