@@ -1,4 +1,4 @@
-import { analyzeImage } from "../lib/gemini";
+import { analyzeImage } from "../lib/openai";
 
 export default {
   async fetch(request: Request) {
@@ -21,7 +21,7 @@ export default {
       console.error("Analyze API failed:", error);
       return Response.json(
         {
-          error: error?.message || "Gagal menganalisis gambar menggunakan Gemini.",
+          error: error?.message || "Gagal menganalisis gambar menggunakan OpenAI.",
           stage: "analyze",
         },
         { status: 500 }
