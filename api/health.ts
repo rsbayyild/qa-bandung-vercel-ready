@@ -1,9 +1,6 @@
 function safeError(error: unknown) {
   if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-    };
+    return { name: error.name, message: error.message };
   }
   return { message: String(error) };
 }
@@ -11,52 +8,85 @@ function safeError(error: unknown) {
 export default {
   async fetch(request: Request) {
     const url = new URL(request.url);
-    const apiKey = process.env.GEMINI_API_KEY;
-    const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+    const apiKey = process.env.OPENAI_API_KEY;
+    const model = process.env.OPENAI_MODEL || "gpt-5.6-terra";
+    const keyConfigured = Boolean(apiKey && apiKey !== "YOUR_OPENAI_API_KEY");
+
     const base = {
       ok: true,
+      provider: "openai",
       runtime: `node ${process.version}`,
-      keyConfigured: Boolean(apiKey && apiKey !== "MY_GEMINI_API_KEY" && apiKey !== "YOUR_GEMINI_API_KEY"),
+      keyConfigured,
       model,
     };
 
-    if (url.searchParams.get("test") !== "gemini") {
+    if (url.searchParams.get("test") !== "openai") {
       return Response.json(base);
     }
 
-    if (!base.keyConfigured) {
+    if (!keyConfigured) {
       return Response.json(
         {
           ...base,
           ok: false,
           stage: "environment",
-          error: "GEMINI_API_KEY belum tersedia di runtime Vercel. Tambahkan Environment Variable lalu redeploy deployment Production.",
+          error:
+            "OPENAI_API_KEY belum tersedia di runtime Vercel. Tambahkan Environment Variable lalu redeploy Production.",
         },
         { status: 500 }
       );
     }
 
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model,
-        contents: "Balas tepat dengan kata: OK",
+      const response = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          store: false,
+          input: "Balas tepat dengan kata: OK",
+          max_output_tokens: 20,
+        }),
       });
+
+      const raw = await response.text();
+      let payload: any;
+      try {
+        payload = raw ? JSON.parse(raw) : {};
+      } catch {
+        payload = raw;
+      }
+
+      if (!response.ok) {
+        return Response.json(
+          {
+            ...base,
+            ok: false,
+            openaiReachable: false,
+            stage: "openai",
+            status: response.status,
+            error: payload?.error?.message || raw || "OpenAI request failed",
+          },
+          { status: 500 }
+        );
+      }
 
       return Response.json({
         ...base,
-        geminiReachable: true,
-        responseReceived: Boolean(response.text),
+        openaiReachable: true,
+        responseReceived: Array.isArray(payload?.output) && payload.output.length > 0,
       });
     } catch (error) {
-      console.error("Gemini health test failed:", error);
+      console.error("OpenAI health test failed:", error);
       return Response.json(
         {
           ...base,
           ok: false,
-          geminiReachable: false,
-          stage: "gemini",
+          openaiReachable: false,
+          stage: "openai",
           error: safeError(error),
         },
         { status: 500 }
