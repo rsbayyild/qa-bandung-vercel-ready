@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "prepare-source": "node scripts/unpack.mjs",
+    "prepare-source": "node scripts/unpack.mjs && node scripts/patch-multiprovider.mjs",
     "prebuild": "npm run prepare-source",
     "build": "vite build",
     "lint": "npm run prepare-source && tsc --noEmit",
