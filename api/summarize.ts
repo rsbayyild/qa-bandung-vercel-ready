@@ -1,26 +1,29 @@
-import { summarizeItems } from "../lib/ai";
+function bodyOf(request: any) {
+  if (request.body && typeof request.body === "object") return request.body;
+  if (typeof request.body === "string") {
+    try { return JSON.parse(request.body); } catch { return {}; }
+  }
+  return {};
+}
 
-export async function POST(request: Request) {
+export default async function handler(request: any, response: any) {
+  if (request.method !== "POST") return response.status(405).json({ error: "Method not allowed" });
+
   try {
-    const body = await request.json();
+    const body = bodyOf(request);
     if (!Array.isArray(body?.items) || body.items.length === 0) {
-      return Response.json(
-        { error: "Tidak ada dokumen atau denah yang diunggah untuk dirangkum." },
-        { status: 400 }
-      );
+      return response.status(400).json({ error: "Tidak ada dokumen atau denah yang diunggah untuk dirangkum." });
     }
 
-    const result = await summarizeItems(body.items, {
-      provider: body.provider,
-      model: body.model,
-    });
-
-    return Response.json(result);
+    const ai = await import("../lib/ai");
+    const result = await ai.summarizeItems(body.items, { provider: body.provider, model: body.model });
+    return response.status(200).json(result);
   } catch (error: any) {
     console.error("Summarize API failed:", error);
-    return Response.json(
-      { error: error?.message || "Gagal membuat ringkasan multiberkas.", stage: "summarize" },
-      { status: 500 }
-    );
+    return response.status(500).json({
+      error: error?.message || "Gagal membuat ringkasan multiberkas.",
+      stage: "summarize",
+      handler: "node-req-res-lazy-import",
+    });
   }
 }
