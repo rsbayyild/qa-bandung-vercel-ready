@@ -1,4 +1,4 @@
-import { chatWithItems } from "../lib/gemini";
+import { chatWithItems } from "../lib/openai";
 
 export default {
   async fetch(request: Request) {
@@ -18,7 +18,7 @@ export default {
       console.error("Chat API failed:", error);
       return Response.json(
         {
-          error: error?.message || "Gagal menghubungi asisten AI.",
+          error: error?.message || "Gagal menghubungi asisten OpenAI.",
           stage: "chat",
         },
         { status: 500 }
