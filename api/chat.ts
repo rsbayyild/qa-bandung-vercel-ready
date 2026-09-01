@@ -1,4 +1,4 @@
-import { chatWithItems } from "./_ai.js";
+import { chatWithItems } from "./_gateway.js";
 
 function bodyOf(request: any) {
   if (request.body && typeof request.body === "object") return request.body;
@@ -23,11 +23,10 @@ export default async function handler(request: any, response: any) {
     });
     return response.status(200).json(result);
   } catch (error: any) {
-    console.error("Chat API failed:", error);
+    console.error("AI Gateway chat failed:", error);
     return response.status(500).json({
       error: error?.message || "Gagal menghubungi asisten AI.",
       stage: "chat",
-      handler: "node-req-res-js-helper",
     });
   }
 }
