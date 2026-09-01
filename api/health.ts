@@ -9,12 +9,12 @@ export default async function handler(request: any, response: any) {
     const model = request.query?.model ? String(request.query.model) : undefined;
     const test = String(request.query?.test || "");
 
-    const ai = await import("../lib/ai");
+    const ai = await import("../lib/ai.ts");
     const runtime = ai.getAiRuntimeStatus();
     const base = {
       ok: true,
       runtime: `node ${process.version}`,
-      handler: "node-req-res-lazy-import",
+      handler: "node-req-res-lazy-import-ts",
       provider,
       model,
       ...runtime,
@@ -36,7 +36,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       ok: false,
       stage: "bootstrap",
-      handler: "node-req-res-lazy-import",
+      handler: "node-req-res-lazy-import-ts",
       error: safeError(error),
     });
   }
