@@ -1,4 +1,4 @@
-import { analyzeImage } from "./_ai";
+import { analyzeImage } from "./_ai.js";
 
 function bodyOf(request: any) {
   if (request.body && typeof request.body === "object") return request.body;
@@ -26,7 +26,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       error: error?.message || "Gagal menganalisis gambar.",
       stage: "analyze",
-      handler: "node-req-res-api-helper",
+      handler: "node-req-res-js-helper",
     });
   }
 }
