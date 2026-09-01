@@ -15,7 +15,7 @@ export default async function handler(request: any, response: any) {
       return response.status(400).json({ error: "Kolom 'messages' wajib diisi." });
     }
 
-    const ai = await import("../lib/ai");
+    const ai = await import("../lib/ai.ts");
     const result = await ai.chatWithItems(body.items || [], body.messages, {
       provider: body.provider,
       model: body.model,
@@ -26,7 +26,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       error: error?.message || "Gagal menghubungi asisten AI.",
       stage: "chat",
-      handler: "node-req-res-lazy-import",
+      handler: "node-req-res-lazy-import-ts",
     });
   }
 }
