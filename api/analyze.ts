@@ -1,3 +1,5 @@
+import { analyzeImage } from "../lib/ai";
+
 function bodyOf(request: any) {
   if (request.body && typeof request.body === "object") return request.body;
   if (typeof request.body === "string") {
@@ -13,8 +15,7 @@ export default async function handler(request: any, response: any) {
     const body = bodyOf(request);
     if (!body?.imageB64) return response.status(400).json({ error: "Crop gambar base64 tidak ditemukan." });
 
-    const ai = await import("../lib/ai.ts");
-    const result = await ai.analyzeImage(
+    const result = await analyzeImage(
       body.imageB64,
       body.type === "order" ? "order" : "denah",
       { provider: body.provider, model: body.model }
@@ -25,7 +26,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       error: error?.message || "Gagal menganalisis gambar.",
       stage: "analyze",
-      handler: "node-req-res-lazy-import-ts",
+      handler: "node-req-res-static-import",
     });
   }
 }
