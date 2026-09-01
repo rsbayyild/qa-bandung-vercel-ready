@@ -15,7 +15,7 @@ export default async function handler(request: any, response: any) {
       return response.status(400).json({ error: "Tidak ada dokumen atau denah yang diunggah untuk dirangkum." });
     }
 
-    const ai = await import("../lib/ai");
+    const ai = await import("../lib/ai.ts");
     const result = await ai.summarizeItems(body.items, { provider: body.provider, model: body.model });
     return response.status(200).json(result);
   } catch (error: any) {
@@ -23,7 +23,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       error: error?.message || "Gagal membuat ringkasan multiberkas.",
       stage: "summarize",
-      handler: "node-req-res-lazy-import",
+      handler: "node-req-res-lazy-import-ts",
     });
   }
 }
