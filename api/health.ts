@@ -1,3 +1,5 @@
+import { getAiRuntimeStatus, testAiProvider } from "../lib/ai";
+
 function safeError(error: unknown) {
   if (error instanceof Error) return { name: error.name, message: error.message, stack: error.stack };
   return { message: String(error) };
@@ -9,12 +11,11 @@ export default async function handler(request: any, response: any) {
     const model = request.query?.model ? String(request.query.model) : undefined;
     const test = String(request.query?.test || "");
 
-    const ai = await import("../lib/ai.ts");
-    const runtime = ai.getAiRuntimeStatus();
+    const runtime = getAiRuntimeStatus();
     const base = {
       ok: true,
       runtime: `node ${process.version}`,
-      handler: "node-req-res-lazy-import-ts",
+      handler: "node-req-res-static-import",
       provider,
       model,
       ...runtime,
@@ -25,7 +26,7 @@ export default async function handler(request: any, response: any) {
     }
 
     try {
-      const result = await ai.testAiProvider({ provider, model });
+      const result = await testAiProvider({ provider, model });
       return response.status(200).json({ ...base, reachable: true, selected: result });
     } catch (error) {
       console.error("AI provider health test failed:", error);
@@ -36,7 +37,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       ok: false,
       stage: "bootstrap",
-      handler: "node-req-res-lazy-import-ts",
+      handler: "node-req-res-static-import",
       error: safeError(error),
     });
   }
