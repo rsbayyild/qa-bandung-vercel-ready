@@ -1,4 +1,4 @@
-import { chatWithItems } from "../lib/ai";
+import { chatWithItems } from "./_ai";
 
 function bodyOf(request: any) {
   if (request.body && typeof request.body === "object") return request.body;
@@ -27,7 +27,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       error: error?.message || "Gagal menghubungi asisten AI.",
       stage: "chat",
-      handler: "node-req-res-static-import",
+      handler: "node-req-res-api-helper",
     });
   }
 }
