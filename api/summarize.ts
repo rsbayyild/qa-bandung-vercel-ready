@@ -1,3 +1,5 @@
+import { summarizeItems } from "../lib/ai";
+
 function bodyOf(request: any) {
   if (request.body && typeof request.body === "object") return request.body;
   if (typeof request.body === "string") {
@@ -15,15 +17,14 @@ export default async function handler(request: any, response: any) {
       return response.status(400).json({ error: "Tidak ada dokumen atau denah yang diunggah untuk dirangkum." });
     }
 
-    const ai = await import("../lib/ai.ts");
-    const result = await ai.summarizeItems(body.items, { provider: body.provider, model: body.model });
+    const result = await summarizeItems(body.items, { provider: body.provider, model: body.model });
     return response.status(200).json(result);
   } catch (error: any) {
     console.error("Summarize API failed:", error);
     return response.status(500).json({
       error: error?.message || "Gagal membuat ringkasan multiberkas.",
       stage: "summarize",
-      handler: "node-req-res-lazy-import-ts",
+      handler: "node-req-res-static-import",
     });
   }
 }
