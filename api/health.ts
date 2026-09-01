@@ -1,4 +1,4 @@
-import { getAiRuntimeStatus, testAiProvider } from "./_ai";
+import { getAiRuntimeStatus, testAiProvider } from "./_ai.js";
 
 function safeError(error: unknown) {
   if (error instanceof Error) return { name: error.name, message: error.message, stack: error.stack };
@@ -15,15 +15,13 @@ export default async function handler(request: any, response: any) {
     const base = {
       ok: true,
       runtime: `node ${process.version}`,
-      handler: "node-req-res-api-helper",
+      handler: "node-req-res-js-helper",
       provider,
       model,
       ...runtime,
     };
 
-    if (test !== "provider") {
-      return response.status(200).json(base);
-    }
+    if (test !== "provider") return response.status(200).json(base);
 
     try {
       const result = await testAiProvider({ provider, model });
@@ -37,7 +35,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       ok: false,
       stage: "bootstrap",
-      handler: "node-req-res-api-helper",
+      handler: "node-req-res-js-helper",
       error: safeError(error),
     });
   }
