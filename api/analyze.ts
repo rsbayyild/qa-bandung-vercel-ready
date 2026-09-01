@@ -1,4 +1,4 @@
-import { analyzeImage } from "./_ai.js";
+import { analyzeImage } from "./_gateway.js";
 
 const VISUAL_PROVIDER = "gemini";
 const VISUAL_MODEL = "gemini-3.6-flash";
@@ -21,8 +21,7 @@ export default async function handler(request: any, response: any) {
     const body = bodyOf(request);
     if (!body?.imageB64) return response.status(400).json({ error: "Crop gambar base64 tidak ditemukan." });
 
-    // Visual SCAN is intentionally pinned server-side to Gemini.
-    // Frontend provider/model state is ignored here so stale UI state cannot route OCR to OpenAI.
+    // SCAN is intentionally pinned server-side so stale frontend state cannot reroute OCR.
     const result = await analyzeImage(
       body.imageB64,
       body.type === "order" ? "order" : "denah",
@@ -30,13 +29,12 @@ export default async function handler(request: any, response: any) {
     );
     return response.status(200).json(result);
   } catch (error: any) {
-    console.error("Analyze API failed:", error);
+    console.error("AI Gateway analyze failed:", error);
     return response.status(500).json({
       error: error?.message || "Gagal menganalisis gambar.",
       stage: "analyze",
       provider: VISUAL_PROVIDER,
       model: VISUAL_MODEL,
-      handler: "node-req-res-js-helper-pinned-vision",
     });
   }
 }
