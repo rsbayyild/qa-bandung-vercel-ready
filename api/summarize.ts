@@ -1,4 +1,4 @@
-import { summarizeItems } from "./_ai.js";
+import { summarizeItems } from "./_gateway.js";
 
 const VISUAL_PROVIDER = "gemini";
 const VISUAL_MODEL = "gemini-3.6-flash";
@@ -23,17 +23,16 @@ export default async function handler(request: any, response: any) {
       return response.status(400).json({ error: "Tidak ada dokumen atau denah yang diunggah untuk dirangkum." });
     }
 
-    // Visual summary is pinned server-side to Gemini for reliability.
+    // Visual summary is pinned server-side for predictable production behavior.
     const result = await summarizeItems(body.items, { provider: VISUAL_PROVIDER, model: VISUAL_MODEL });
     return response.status(200).json(result);
   } catch (error: any) {
-    console.error("Summarize API failed:", error);
+    console.error("AI Gateway summarize failed:", error);
     return response.status(500).json({
       error: error?.message || "Gagal membuat ringkasan multiberkas.",
       stage: "summarize",
       provider: VISUAL_PROVIDER,
       model: VISUAL_MODEL,
-      handler: "node-req-res-js-helper-pinned-vision",
     });
   }
 }
