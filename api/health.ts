@@ -1,4 +1,4 @@
-import { getAiRuntimeStatus, testAiProvider } from "../lib/ai";
+import { getAiRuntimeStatus, testAiProvider } from "./_ai";
 
 function safeError(error: unknown) {
   if (error instanceof Error) return { name: error.name, message: error.message, stack: error.stack };
@@ -15,7 +15,7 @@ export default async function handler(request: any, response: any) {
     const base = {
       ok: true,
       runtime: `node ${process.version}`,
-      handler: "node-req-res-static-import",
+      handler: "node-req-res-api-helper",
       provider,
       model,
       ...runtime,
@@ -37,7 +37,7 @@ export default async function handler(request: any, response: any) {
     return response.status(500).json({
       ok: false,
       stage: "bootstrap",
-      handler: "node-req-res-static-import",
+      handler: "node-req-res-api-helper",
       error: safeError(error),
     });
   }
