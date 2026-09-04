@@ -1,7 +1,7 @@
 // Madorai AI Gateway
 // Visual workflow (SCAN + RINGKASAN) is pinned by route handlers to Gemini.
 // Chat can choose a provider/model at runtime. All provider secrets stay server-side.
-export const AI_GATEWAY_VERSION = "2.0.1";
+export const AI_GATEWAY_VERSION = "2.1.0";
 
 export const AI_PROVIDER_MODELS = {
   openai: ["gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.6-sol"],
@@ -188,10 +188,16 @@ async function callProvider({ provider, model, prompt, images = [], system, json
   return json ? parseJson(text) : String(text).trim();
 }
 
-const OCR = `Kamu asisten ahli arsitektur Jepang untuk tim Indonesia. Lakukan OCR sangat teliti pada crop gambar. Baca seluruh Kanji/Kana/angka/singkatan/simbol teknis, terjemahkan, dan jangan mengarang teks yang tidak terlihat.`;
-const ORDER = `Baca crop order sheet Jepang secara lengkap: instruksi, kuantitas, ukuran, material, pekerjaan, dan catatan. Pertahankan detail teknis dan jangan mengarang.`;
-const OCR_JSON = `\nKeluarkan HANYA JSON valid: {"jp":"","romaji":"","id":"","en":"","summary":"","desc":""}`;
-const ORDER_JSON = `\nKeluarkan HANYA JSON valid: {"summary":"","detail":"","category":"Material|Furnitur|Pekerjaan|Mood|Dimensi|Catatan"}`;
+// Keep the original app behavior: denah OCR returns original Japanese + ID/EN translation,
+// while order-sheet crops are explained for an Indonesian architecture team.
+const OCR = `Kamu adalah asisten ahli arsitektur Jepang untuk tim kontraktor/arsitek Indonesia.
+Pengguna memberikan crop gambar dari denah arsitektur Jepang.
+Baca semua teks/simbol dengan teliti. Jangan mengarang teks yang tidak terlihat.`;
+const ORDER = `Kamu adalah asisten untuk tim kontraktor/arsitek Indonesia mengerjakan proyek renovasi Jepang.
+Pengguna memberikan crop dari order sheet / brief klien Jepang.
+Baca dan jelaskan apa yang tertulis. Pertahankan material, spesifikasi, instruksi, kode, dan catatan klien secara akurat.`;
+const OCR_JSON = `\nBalas HANYA JSON valid tanpa markdown: {"jp":"teks asli","romaji":"romanisasi","id":"terjemahan ID","en":"terjemahan EN","summary":"kesimpulan teknis 1 kalimat + dimensi jika ada","desc":"deskripsi konteks 2-3 kalimat Bahasa Indonesia"}`;
+const ORDER_JSON = `\nBalas HANYA JSON valid tanpa markdown: {"summary":"kesimpulan 1 kalimat apa yang diminta di area ini","detail":"penjelasan lengkap 2-4 kalimat Bahasa Indonesia: material, spesifikasi, instruksi, atau catatan klien","category":"Material|Furnitur|Pekerjaan|Mood|Dimensi|Catatan"}`;
 
 export async function analyzeImage(imageB64, type, options = {}) {
   const selected = resolveAiSelection(options);
@@ -204,21 +210,103 @@ export async function analyzeImage(imageB64, type, options = {}) {
   });
 }
 
-const SUMMARY = `Analisis semua gambar dokumen renovasi Jepang secara multimodal dan grounded. Ekstrak ringkasan, highlight kritis, mood, warna lantai/dinding/furniture, kitchen, kusen jendela/pintu, finishing pintu, CH, catatan khusus, dan tulisan tangan.
+// SUMMARY parity contract.
+// This restores the intent of the original QA workflow: not merely describing documents,
+// but preparing actionable information for RA/QA before modeling and rendering.
+const SUMMARY = `Kamu adalah asisten QA arsitektur/interior untuk tim Render Assistant (RA) Indonesia yang mengerjakan proyek renovasi Jepang.
 
-ATURAN BAHASA OUTPUT (WAJIB):
-- Semua isi naratif untuk projectSummary.text, highlights, seluruh design.*.text, specialNotes, dan handwrittenNotes.meaning WAJIB ditulis dalam Bahasa Indonesia yang natural, ringkas, dan profesional.
-- Terjemahkan instruksi, kalimat, dan catatan berbahasa Jepang ke Bahasa Indonesia. Jangan menyalin kalimat Jepang panjang sebagai hasil utama.
-- Nama brand, nama produk/seri resmi, kode model, kode warna, kode material, dimensi, singkatan teknis, dan kode alfanumerik harus dipertahankan persis bila terbaca. Jangan menerjemahkan atau mengarang nama produk.
-- Bila nama produk Jepang penting untuk identifikasi, boleh pertahankan teks Jepang aslinya bersama nama/penjelasan Indonesia, tetapi narasi penjelasannya tetap Bahasa Indonesia.
-- Khusus handwrittenNotes: originalText harus mempertahankan teks asli Jepang; translation dan meaning harus Bahasa Indonesia.
-- Jika suatu informasi tidak terbaca atau tidak ada, nyatakan tidak ditemukan/tidak terbaca; jangan mengarang.
+Analisis SEMUA gambar dokumen sebagai satu paket proyek. Dokumen dapat berupa order sheet, denah, spesifikasi, referensi material, catatan klien, dan tulisan tangan. Tujuanmu adalah menghasilkan ringkasan kerja yang langsung berguna untuk modeling dan rendering, bukan sekadar OCR atau terjemahan umum.
 
-GROUNDING:
-- sources wajib menggunakan nama file sumber yang relevan.
-- box memakai persen 0-100; bila tidak yakin gunakan source kosong dan x/y/w/h=0.
-- Bedakan fakta yang benar-benar tertulis dari interpretasi. Jangan mengarang data yang tidak terlihat.`;
-const SUMMARY_JSON = `Keluarkan HANYA JSON valid dengan struktur tepat ini:\n{"projectSummary":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"highlights":[],"design":{"mood":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"floorColor":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"wallColor":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"furnitureColor":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"kitchenDetail":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"windowFrames":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"doorFrames":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"doorFinishing":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"ceilingHeight":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}}},"specialNotes":[],"handwrittenNotes":[{"originalText":"","translation":"","meaning":"","source":"","box":{"source":"","x":0,"y":0,"w":0,"h":0}}]}`;
+PRINSIP UTAMA:
+1. Baca seluruh dokumen silang-sumber. Gabungkan informasi yang saling melengkapi dan perhatikan bila spesifikasi berbeda per ruang.
+2. Bedakan dengan jelas kondisi EXISTING / dipertahankan dengan NEW / diganti / dipindah / ditambahkan.
+3. Jangan mengarang. Jika tidak ada data, gunakan teks kosong atau array kosong sesuai field.
+4. Pertahankan nama brand, seri produk, nama warna/material resmi, kode model, kode wallpaper, kode pintu/jendela, angka, dimensi, dan singkatan teknis persis seperti yang terbaca.
+5. Semua narasi hasil WAJIB Bahasa Indonesia yang natural dan profesional. Teks Jepang panjang jangan menjadi output utama; terjemahkan maknanya. Nama produk Jepang boleh dipertahankan bila penting untuk identifikasi.
+
+1. DETAIL UTAMA RENOVASI — projectSummary
+Tulis 2-4 kalimat Bahasa Indonesia yang menjelaskan inti proyek: jenis proyek/ruang, permintaan klien, scope pekerjaan atau gambar yang harus dibuat, ruang yang menjadi fokus, serta informasi utama yang menjelaskan tujuan renovasi. Jangan isi dengan deskripsi generik.
+
+2. POIN KRITIS PELAKSANA LAPANGAN — highlights
+Ini adalah bagian PALING OPERASIONAL untuk RA/QA. Buat poin terpisah hanya bila ada evidence. Prioritaskan:
+- elemen EXISTING yang harus dipertahankan atau digunakan kembali;
+- elemen yang harus dibongkar, diganti, ditambahkan, dipindahkan, atau direlokasi;
+- perbedaan spesifikasi antar ruang yang berisiko tertukar;
+- furniture existing yang tetap dipakai atau dipindahkan;
+- custom furniture / custom fabrication / item khusus;
+- instruksi posisi, dimensi, CH, bukaan, atau batasan lapangan yang penting;
+- pengecualian: hanya satu ruang baru sementara ruang lain existing, satu sisi diganti sementara sisi lain dicat, dan kondisi sejenis;
+- catatan yang bila terlewat dapat menyebabkan kesalahan modeling, materialisasi, atau rendering.
+Jangan mengulang semua atribut desain sebagai highlight. Highlights harus menjelaskan APA YANG HARUS DIPERHATIKAN SAAT EKSEKUSI. Jika memang tidak ada poin kritis, gunakan [].
+
+3. ATRIBUT DESAIN & WARNA — design
+- mood: konsep desain, ambience, style, palette, kombinasi warna/material utama.
+- floorColor: spesifikasi lantai per ruang. Sebutkan existing/new, brand, series, pattern/color, dan kode bila tersedia.
+- wallColor: spesifikasi dinding/wallpaper/paint per ruang, termasuk kode produk. Bila plafon memakai material terkait dan penting, jelaskan.
+- furnitureColor: warna/material/finish furniture; bedakan existing dan custom; pertahankan brand/seri/kode.
+- kitchenDetail: status existing/reuse/new, brand, series, tipe/layout, warna/finish, ukuran atau spesifikasi yang terbaca. Jika dokumen hanya menyatakan existing kitchen, tulis itu secara jelas dan jangan mengarang seri.
+- windowFrames: warna/material/tipe sash atau kusen jendela, existing/new bila diketahui.
+- doorFrames: warna/material/tipe kusen/frame pintu, existing/new bila diketahui.
+- doorFinishing: tipe daun pintu, brand/series/design code, warna/material/finish dan kondisi existing/new bila diketahui.
+- ceilingHeight: CH/ketinggian plafon per ruang bila tersedia; jangan membuat nilai standar bila dokumen tidak menyebutkannya.
+Untuk semua field design, jelaskan perbedaan per ruang dan jangan menyatukan spesifikasi yang berbeda menjadi satu nilai generik.
+
+4. CATATAN KHUSUS — specialNotes
+Isi instruksi klien atau kondisi penting yang tidak tepat dimasukkan ke highlights/design, misalnya kebutuhan penggunaan ruang, permintaan output, furniture/peralatan khusus, atau catatan koordinasi. Jika tidak ada, gunakan [].
+
+5. TULISAN TANGAN — handwrittenNotes
+Berikan perhatian ekstra pada tulisan tangan/koreksi manual karena sering memuat instruksi renovasi penting. originalText mempertahankan teks Jepang asli; translation adalah terjemahan Bahasa Indonesia; meaning menjelaskan arti praktisnya untuk RA/QA. Jika tidak ada tulisan tangan yang terbaca, gunakan [].
+
+ATURAN GROUNDING:
+- sources harus berisi label/nama file dari daftar gambar yang benar-benar mendukung informasi tersebut.
+- Jangan mencantumkan source yang tidak relevan hanya untuk mengisi field.
+- box memakai persen 0-100. Jika lokasi tidak dapat ditentukan dengan yakin, gunakan {"source":"","x":0,"y":0,"w":0,"h":0}.
+- Jika ada konflik antar dokumen, jangan memilih diam-diam. Jelaskan konflik tersebut pada highlights atau specialNotes.
+- Jangan membuat asumsi standar arsitektur sebagai fakta dokumen.`;
+
+const SUMMARY_JSON = `Keluarkan HANYA JSON valid tanpa markdown dengan struktur tepat ini:
+{
+  "projectSummary": {
+    "text": "",
+    "sources": [],
+    "box": {"source":"","x":0,"y":0,"w":0,"h":0}
+  },
+  "highlights": [
+    {
+      "text": "",
+      "sources": [],
+      "box": {"source":"","x":0,"y":0,"w":0,"h":0}
+    }
+  ],
+  "design": {
+    "mood": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},
+    "floorColor": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},
+    "wallColor": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},
+    "furnitureColor": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},
+    "kitchenDetail": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},
+    "windowFrames": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},
+    "doorFrames": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},
+    "doorFinishing": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},
+    "ceilingHeight": {"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}}
+  },
+  "specialNotes": [
+    {
+      "text": "",
+      "sources": [],
+      "box": {"source":"","x":0,"y":0,"w":0,"h":0}
+    }
+  ],
+  "handwrittenNotes": [
+    {
+      "originalText":"",
+      "translation":"",
+      "meaning":"",
+      "source":"",
+      "box":{"source":"","x":0,"y":0,"w":0,"h":0}
+    }
+  ]
+}
+Jika highlights, specialNotes, atau handwrittenNotes tidak memiliki data nyata, keluarkan array kosong [] untuk field tersebut. Jangan keluarkan object kosong palsu.`;
 
 export async function summarizeItems(items, options = {}) {
   if (!items?.length) throw new Error("Tidak ada dokumen untuk dirangkum.");
@@ -226,7 +314,7 @@ export async function summarizeItems(items, options = {}) {
   const labels = items.map((item, i) => `#${i + 1} ${item.label} (${item.type})`).join("\n");
   return callProvider({
     ...selected,
-    prompt: `${SUMMARY}\n\nUrutan gambar:\n${labels}\n\n${SUMMARY_JSON}`,
+    prompt: `${SUMMARY}\n\nDAFTAR GAMBAR/SOURCE:\n${labels}\n\n${SUMMARY_JSON}`,
     images: items.map((item) => item.src),
     json: true,
     max: 12000,
