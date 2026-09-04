@@ -1,7 +1,7 @@
 // Madorai AI Gateway
 // Visual workflow (SCAN + RINGKASAN) is pinned by route handlers to Gemini.
 // Chat can choose a provider/model at runtime. All provider secrets stay server-side.
-export const AI_GATEWAY_VERSION = "2.0.0";
+export const AI_GATEWAY_VERSION = "2.0.1";
 
 export const AI_PROVIDER_MODELS = {
   openai: ["gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.6-sol"],
@@ -204,7 +204,20 @@ export async function analyzeImage(imageB64, type, options = {}) {
   });
 }
 
-const SUMMARY = `Analisis semua gambar dokumen renovasi Jepang secara multimodal dan grounded. Ekstrak ringkasan, highlight kritis, mood, warna lantai/dinding/furniture, kitchen, kusen jendela/pintu, finishing pintu, CH, catatan khusus, dan tulisan tangan. sources wajib nama file. box memakai persen 0-100; bila tidak yakin gunakan source kosong dan x/y/w/h=0. Jangan mengarang data yang tidak terlihat.`;
+const SUMMARY = `Analisis semua gambar dokumen renovasi Jepang secara multimodal dan grounded. Ekstrak ringkasan, highlight kritis, mood, warna lantai/dinding/furniture, kitchen, kusen jendela/pintu, finishing pintu, CH, catatan khusus, dan tulisan tangan.
+
+ATURAN BAHASA OUTPUT (WAJIB):
+- Semua isi naratif untuk projectSummary.text, highlights, seluruh design.*.text, specialNotes, dan handwrittenNotes.meaning WAJIB ditulis dalam Bahasa Indonesia yang natural, ringkas, dan profesional.
+- Terjemahkan instruksi, kalimat, dan catatan berbahasa Jepang ke Bahasa Indonesia. Jangan menyalin kalimat Jepang panjang sebagai hasil utama.
+- Nama brand, nama produk/seri resmi, kode model, kode warna, kode material, dimensi, singkatan teknis, dan kode alfanumerik harus dipertahankan persis bila terbaca. Jangan menerjemahkan atau mengarang nama produk.
+- Bila nama produk Jepang penting untuk identifikasi, boleh pertahankan teks Jepang aslinya bersama nama/penjelasan Indonesia, tetapi narasi penjelasannya tetap Bahasa Indonesia.
+- Khusus handwrittenNotes: originalText harus mempertahankan teks asli Jepang; translation dan meaning harus Bahasa Indonesia.
+- Jika suatu informasi tidak terbaca atau tidak ada, nyatakan tidak ditemukan/tidak terbaca; jangan mengarang.
+
+GROUNDING:
+- sources wajib menggunakan nama file sumber yang relevan.
+- box memakai persen 0-100; bila tidak yakin gunakan source kosong dan x/y/w/h=0.
+- Bedakan fakta yang benar-benar tertulis dari interpretasi. Jangan mengarang data yang tidak terlihat.`;
 const SUMMARY_JSON = `Keluarkan HANYA JSON valid dengan struktur tepat ini:\n{"projectSummary":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"highlights":[],"design":{"mood":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"floorColor":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"wallColor":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"furnitureColor":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"kitchenDetail":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"windowFrames":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"doorFrames":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"doorFinishing":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}},"ceilingHeight":{"text":"","sources":[],"box":{"source":"","x":0,"y":0,"w":0,"h":0}}},"specialNotes":[],"handwrittenNotes":[{"originalText":"","translation":"","meaning":"","source":"","box":{"source":"","x":0,"y":0,"w":0,"h":0}}]}`;
 
 export async function summarizeItems(items, options = {}) {
